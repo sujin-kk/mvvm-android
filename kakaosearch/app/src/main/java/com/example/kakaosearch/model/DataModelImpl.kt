@@ -7,7 +7,7 @@ import io.reactivex.Single
 
 class DataModelImpl(private val service: KakaoSearchService): DataModel{
 
-    private val KAKAO_APP_KEY = "eefebce866c4864939cddc88a6d1b51e"
+    private val KAKAO_APP_KEY = "MY_APP_KEY"
 
     override fun getData(query:String, sort: KakaoSearchSortEnum, page:Int, size:Int): Single<ImageSearchResponse> {
         return service.searchImage(auth = "KakaoAK $KAKAO_APP_KEY", query = query, sort = sort.sort, page = page, size = size)
