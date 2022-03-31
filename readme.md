@@ -1,4 +1,12 @@
+## 목차
+- [1. MVVM](#1-mvvm)
+- [2. MVVM ViewModel vs AAC ViewModel](#2-mvvm-viewmodel-vs-aac-viewmodel)
+- [3. ViewModel의 사용](#3-viewmodel의-사용)
+- [LiveData](#livedata)
+- [DataBinding](#databinding)
+- [Coroutine](#coroutine)
 
+---
 ### 1. MVVM
 <img width="600" alt="image" src="https://user-images.githubusercontent.com/85485290/161014604-77f7115a-6998-4f0b-8c24-8305a37bad1c.png">
 
@@ -31,7 +39,8 @@
 
 
 ---
-### 2. MVMM 아키텍처 패턴의 ViewModel과 AAC의 ViewModel의 차이
+### 2. MVVM ViewModel vs AAC ViewModel
+- MVMM 아키텍처 패턴의 ViewModel과 AAC의 ViewModel의 차이
 
 > **MVVM** 패턴 이야기 하면서 구글 이야기를 한다면 자리를 박차고 나가라. - 강사룡님
 
