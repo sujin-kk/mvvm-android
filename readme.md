@@ -2,9 +2,9 @@
 - [1. MVVM](#1-mvvm)
 - [2. MVVM ViewModel vs AAC ViewModel](#2-mvvm-viewmodel-vs-aac-viewmodel)
 - [3. ViewModel의 사용](#3-viewmodel의-사용)
-- [LiveData](#livedata)
-- [DataBinding](#databinding)
-- [Coroutine](#coroutine)
+- [4. LiveData](#4-livedata)
+- [5. DataBinding](#5-databinding)
+- [6. Coroutine](#6-coroutine)
 
 ---
 ### 1. MVVM
@@ -253,10 +253,10 @@ class HasParamAndroidViewModelFactory(private val application: Application, priv
 </aside>
 
 ---
-### LiveData
+### 4. LiveData
 
 ---
-### DataBinding
+### 5. DataBinding
 
 ```
 dataBinding {
@@ -264,5 +264,5 @@ dataBinding {
 }
 ```
 ---
-### Coroutine
+### 6. Coroutine
 
