@@ -258,11 +258,95 @@ class HasParamAndroidViewModelFactory(private val application: Application, priv
 ---
 ### 5. DataBinding
 
+🔗 [공식문서](https://developer.android.com/topic/libraries/data-binding)
+
+🔗 [참고블로그](https://salix97.tistory.com/243)
+
+✨ 시작!
 ```
 dataBinding {
     enabled = true
 }
 ```
+
+ex) TextView 위젯에 viewModel의 변수 userName을 결합
+
+- 기존의 findViewById 호출 방식
+
+```kotlin
+findViewById<TextView>(R.id.sample_text).apply {
+        text = viewModel.userName
+}
+```
+
+- 데이터바인딩 - XML 파일에서 직접 위젯에 텍스트를 할당, 코틀린 코드 호출할 필요X
+- `@{}`  할당 표현식에 유의!
+- 이것을 `선언적(declarative) 레이아웃` 작성 이라고 함
+
+```xml
+<TextView
+        android:text="@{viewmodel.userName}" />
+```
+
+- 일반적인 레이아웃을 만들되 `<layout></layout>` 태그로 래핑해줘야함
+- 표현식에서 사용할 수 있는 결합 변수는 `data` 요소 안에서 정의됨!
+
+```xml
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+        <data>
+            <variable
+                name="viewmodel"
+                type="com.myapp.data.ViewModel" />
+        </data>
+        <ConstraintLayout... /> <!-- UI layout's root element -->
+    </layout>
+```
+
+- **Activity 에서 기존의 setContentView() 함수를 DataBindingUtil.setContentView() 로 교체한다.**
+
+DataBindingUtil class 의 객체를 생성하고, 기존의 setContentView() 를 DataBindingUtil.setContentView() 로 대체한다.
+
+이제, data binding 을 사용하여 layout 을 관리할 수 있다.
+
+
+- **결합 어댑터(Binding Adapter)**
+
+모든 레이아웃 표현식에는 속성 또는 리스너를 설정하는 데 필요한 프레임워크를 호출하는 **결합 어댑터가 존재한다!**
+
+예를 들어 결합 어댑터는 `setText()` 메서드를 호출하여 텍스트 속성을 설정하거나,  `setOnClickListener()` 메서드를 호출하여 리스너를 클릭 이벤트에 추가할 수 있는데,,,
+
+이 페이지 예시에 사용 된 `android:text` 속성의 어댑터와 같은 가장 일반적인 결합 어댑터는 `android.databinding.adapters` 패키지에서 사용할 수 있다.
+
+- 일반적인 결합 어댑터 목록은 [어댑터](https://android.googlesource.com/platform/frameworks/data-binding/+/refs/heads/studio-master-dev/extensions/baseAdapters/src/main/java/androidx/databinding/adapters) 를 참조!!
+
+아래와 같이 커스텀 어댑터도 생성 가능하다.
+
+```kotlin
+@BindingAdapter("app:goneUnless")
+fun goneUnless(view: View, visible: Boolean) {
+    view.visibility = if (visible) View.VISIBLE else View.GONE
+}
+```
+
+> 데이터 바인딩을 왜 사용할까?
+> 
+
+**데이터 바인딩을 사용하면, 데이터를 UI 요소에 연결하기 위해 필요한 코드를 최소화할 수 있다.**
+
+data binding 을 사용했을 때, 당장 가시적으로 보이는 장점들을 꼽자면 다음과 같다.
+
+- findViewId() 를 호출하지 않아도, 자동으로 xml 에 있는 VIew 들을 만들어준다.
+- RecyclerView 에 각각의 item 을 set 해주는 작업도 자동으로 진행된다.
+- data 가 바뀌면 자동으로 View 를 변경하게 할 수 있다.
+- xml 리소스만 보고도 View 에 어떤 데이터가 들어가는지 파악이 가능하다.
+- 코드 가독성이 좋아지고, 상대적으로 코드량이 줄어든다.
+
+하지만 데이터 바인딩은 클래스 파일이 많이 생기고, 빌드 속도가 느려지는 등 단점이 존재하기 때문에 단독으로 사용하기보다는,
+
+**MVP 또는 MVVM 패턴을 구현하기 위해 데이터 바인딩이 유용하게 사용된다**
+
+
 ---
 ### 6. Coroutine
 
