@@ -453,7 +453,8 @@ ex)
     
     
 #### 탐색 그래프에 대상 추가
-    - [참고](https://developer.android.com/guide/navigation/navigation-create-destinations?hl=ko)
+    
+[참고](https://developer.android.com/guide/navigation/navigation-create-destinations?hl=ko)
  
 <img width="300" alt="image" src="https://user-images.githubusercontent.com/85485290/161591913-2e53c359-47b2-4708-9b9d-56305272fa13.png">
 
