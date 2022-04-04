@@ -1,10 +1,11 @@
 ## 목차
-  * [1. View](#1-view)
+  * [1. Navigation](#1-navigation)
+  * [2. View](#2-view)
     + [DiffUtil](#diffutil)
     + [ListAdapter](#listadapter)
   
-  * [2. ViewModel](#2-viewmodel)
-  * [3. Model](#3-model)
+  * [3. ViewModel](#3-viewmodel)
+  * [4. Model](#4-model)
 
 ---
 
@@ -12,7 +13,16 @@
 
 [sunflower-github](https://github.com/android/sunflower)
 
-### 1. View
+---
+### 1. Navigation
+
+**[Jetpack Navigation 구조]**
+
+🔗 참고 링크
+
+[navigation](http://developer.android.com/guide/navigation?hl=ko)
+
+### 2. View
 - MVVM에서 View에 해당하는 Activity, Fragment, Adapter
 - 이 프로젝트는 SPA(Single-Page-Application) 구조!
 
@@ -275,10 +285,92 @@ binding.hasPlantings= !result.isNullOrEmpty()
 ```
 
 ---
-### 2. ViewModel
+### 3. ViewModel
 
+🔗 참고링크
+
+- flow
+
+[stateflow-and-sharedflow](http://developer.android.com/kotlin/flow/stateflow-and-sharedflow)
+
+[flow-정리글](http://yoon-dailylife.tistory.com/72)
+
+- coroutine
+
+[architecture-with-coroutine](http://developer.android.com/topic/libraries/architecture/coroutines?hl=ko)
+
+[coroutine](http://developer.android.com/kotlin/coroutines?hl=ko)
+
+
+
+- 유일한 액티비티인 GardenActivity에 ViewModel은 없다.
+
+
+**[PlainListViewModel]**
+
+<img src="https://user-images.githubusercontent.com/85485290/161577629-c90b2f8c-9d45-43b7-9440-e395f7b2d4d9.png" width="300">
+
+
+- 생성자로 MVVM에서 `Model`에 해당하는 PlantRepository와 SavedStateHandle을 가진다.
+
+```kotlin
+@HiltViewModel
+class PlantListViewModel @Inject internal constructor(
+    plantRepository: PlantRepository,
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
+```
+
+
+- 데이터는 MutableStateFlow를 사용하는데, 상태를 업데이트 하고 Flow에 전송하는 것임.
+- Flow는 일반적으로 cold stream이지만, StateFlow는 `hot stream`이다. 일반 Flow는 마지막 값의 개념이 없고 collect 될 때만 활성화 되는 반면, StateFlow는 **마지막 값**의 개념이 있으며 **생성하자마자 활성화** 된다고 함!!
+- Flow는 Cold니 Subject ↔ StateFlow는 Hot이니 Observable
+- Stream하고 데이터를 저장한다는 기능으로 기존의 **LiveData + RxJava 느낌,,??**
+- LiveData와 Flow의 차이점 중 하나가 Flow는 flatMapLatest와 같은 Stream 함수를 제공한다는 점!
+
+
+```kotlin
+private val growZone: MutableStateFlow<Int> = MutableStateFlow(
+        savedStateHandle.get(GROW_ZONE_SAVED_STATE_KEY) ?: NO_GROW_ZONE
+    )
+
+val plants: LiveData<List<Plant>> = growZone.flatMapLatest { zone ->
+    if (zone == NO_GROW_ZONE) {
+        plantRepository.getPlants()
+    } else {
+            plantRepository.getPlantsWithGrowZoneNumber(zone)
+      }
+}.asLiveData()
+```
+
+- ViewModelScope는 앱의 각 ViewModel을 대상으로 정의된다. 문서를 인용해보자면,,
+
+
+> 이 범위에서 시작된 모든 코루틴은 ViewModel이 삭제되면 자동으로 취소됩니다. 코루틴은 ViewModel이 활성 상태인 경우에만 실행해야 할 작업이 있을 때 유용합니다. 예를 들어 레이아웃의 일부 데이터를 계산한다면 작업의 범위를 ViewModel로 지정하여 ViewModel을 삭제하면 리소스를 소모하지 않도록 작업이 자동으로 취소됩니다.
+> 
+
+
+라고 하넹
+
+```kotlin
+
+    init {
+        viewModelScope.launch {
+            growZone.collect { newGrowZone ->
+                savedStateHandle.set(GROW_ZONE_SAVED_STATE_KEY, newGrowZone)
+            }
+        }
+    }
+```
+
+
+<img src="https://user-images.githubusercontent.com/85485290/161577780-b865e73b-a0c1-47d4-8faa-03d2092fbeac.png" width="400">
+StateFlow와 MutableStateFlow!
+
+<img src="https://user-images.githubusercontent.com/85485290/161577833-15652cb0-8932-42aa-98e8-c3cdfbfddc76.png" width="400">
+LiveData와 Flow의 차이점?
 
 ---
-### 3. Model
+### 4. Model
 
 
