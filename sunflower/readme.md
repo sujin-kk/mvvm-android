@@ -27,7 +27,7 @@
 navigation 구성 요소는 세가지 주요 부분으로 구성된다는데,,
 
 - Navigation Graph: 모든 탐색 관련 정보가 하나의 중심 위치에 모여 있는 **XML 리소스**. 여기에는 *대상*이라고 부르는 앱 내의 모든 개별적 콘텐츠 영역과 사용자가 앱에서 갈 수 있는 모든 이용 가능한 경로가 포함된다.
-- `NavHost`: 탐색 그래프에서 대상을 표시하는 빈 컨테이너. 대상 구성요소에는 프래그먼트 대상을 표시하는 기본 `NavHost` 구현인 `[NavHostFragment](https://developer.android.com/reference/androidx/navigation/fragment/NavHostFragment?hl=ko)`가 포함된다.
+- `NavHost`: 탐색 그래프에서 대상을 표시하는 빈 컨테이너. 대상 구성요소에는 프래그먼트 대상을 표시하는 기본 `NavHost` 구현인 `[NavHostFragment]`가 포함된다.
 - `NavController`: `NavHost`에서 앱 탐색을 관리하는 객체. `NavController`는 사용자가 앱 내에서 이동할 때 `NavHost`에서 대상 콘텐츠의 전환을 오케스트레이션한다(?).
 
 
