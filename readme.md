@@ -5,6 +5,7 @@
 - [4. LiveData](#4-livedata)
 - [5. DataBinding](#5-databinding)
 - [6. Coroutine](#6-coroutine)
+- [7. Navigation](#7-navigation)
 
 ---
 ### 1. MVVM
@@ -350,3 +351,217 @@ data binding 을 사용했을 때, 당장 가시적으로 보이는 장점들을
 ---
 ### 6. Coroutine
 
+---
+### 7. Navigation
+
+🔗 [공식문서](https://developer.android.com/guide/navigation?hl=ko)
+
+#### build.gradle에 추가
+```kotlin
+dependencies {
+  val nav_version = "2.4.1"
+
+  // Java language implementation
+  implementation("androidx.navigation:navigation-fragment:$nav_version")
+  implementation("androidx.navigation:navigation-ui:$nav_version")
+
+  // Kotlin
+  implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
+  implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
+
+  // Feature module Support
+  implementation("androidx.navigation:navigation-dynamic-features-fragment:$nav_version")
+
+  // Testing Navigation
+  androidTestImplementation("androidx.navigation:navigation-testing:$nav_version")
+
+  // Jetpack Compose Integration
+  implementation("androidx.navigation:navigation-compose:$nav_version")
+}
+```
+
+#### 탐색 그래프(nav_graph) 만들기
+    - 탐색 그래프는 모든 대상 및 작업을 포함하는 resource(xml) 파일
+    - 그래프는 앱의 모든 navigation 경로를 나타내 줌
+
+
+ex)
+
+<img width="500" alt="image" src="https://user-images.githubusercontent.com/85485290/161588772-c34c3931-fb16-42b8-b815-024bfdf7dcd8.png">
+
+> 1. Project의 ```res``` 디렉토리에서 New > Android Resource File
+> 
+> 2. File name에 'nav_graph'와 같은 이름 입력
+> 
+> 3. Resource type으로 Navigation을 선택하고 OK
+> 
+
+> 첫번째 nav_graph를 추가할 때는 ```res``` 디렉토리 안에 ```navigation``` 리소스 디렉토리를 만들고 여기에 ```nav_graph.xml```을 만들어야 함!!
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/nav_graph">
+</navigation>
+```
+중첩된 그래프가 있다면 하위 <navigation> 요소로 표시될 것
+
+#### NavHost 추가
+    - 탐색 호스트는 빈 컨테이너로, 사용자가 앱을 탐색하는 동안 여기서 대상이 교체된다.
+    - 탐색 호스트는 ```NavHost```에서 파생되어야 함
+    - 탐색 구성요소의 기본 ```NavHost``` 구현인 ```NavHostFragment```는 프래그먼트 대상의 교체를 처리함
+    
+    
+#### XML을 통한 NavHostFragment 추가
+    - 이건 가장 밑단의 base activity에 들어갈 내용인듯? 하나의 액티비티 - 다수의 프래그먼트 구조
+    
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        .../>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/nav_host_fragment"
+        android:name="androidx.navigation.fragment.NavHostFragment"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+
+        app:defaultNavHost="true"
+        app:navGraph="@navigation/nav_graph" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        .../>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+```
+- android:name 속성은 NavHost 구현의 클래스 이름을 포함.
+- app:navGraph 속성은 NavHostFragment를 탐색 그래프와 연결. 탐색 그래프는 사용자가 이동할 수 있는 이 NavHostFragment의 모든 대상을 지정.
+- app:defaultNavHost="true" 속성을 사용하면 NavHostFragment가 시스템 뒤로 버튼을 가로챔? 하나의 NavHost만 기본값으로 지정할 수 있음. 동일한 레이아웃에 여러 호스트가 있다면(예: 창이 2개인 레이아웃) 한 호스트만 기본 NavHost로 지정해야 함.
+    
+    
+#### 탐색 그래프에 대상 추가
+    - [참고](https://developer.android.com/guide/navigation/navigation-create-destinations?hl=ko)
+ 
+<img width="300" alt="image" src="https://user-images.githubusercontent.com/85485290/161591913-2e53c359-47b2-4708-9b9d-56305272fa13.png">
+
+#### 대상의 구성
+    - **Type** 필드는 대상이 소스 코드에서 프래그먼트, 활동 또는 기타 클래스로 구현되는지 여부를 나타냄
+    - **Lable** 필드는 사용자가 읽을 수 있는 대상 이름임 -> res의 string 문자열을 사용하는 것이 좋음
+    - **ID** 필드에는 대상을 참조할 수 있는 대상의 ID임
+    - **Class** 드롭다운에는 대상과 연결된 클래스 이름이 표시됨
+    
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    app:startDestination="@id/blankFragment">
+    <fragment
+        android:id="@+id/blankFragment"
+        android:name="com.example.cashdog.cashdog.BlankFragment"
+        android:label="@string/label_blank"
+        tools:layout="@layout/fragment_blank" />
+</navigation> 
+```
+    
+#### 대상 연결
+
+- ```<action>``` 태그에 연결을 나타낼 수 있음!
+
+```
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    app:startDestination="@id/blankFragment">
+    <fragment
+        android:id="@+id/blankFragment"
+        android:name="com.example.cashdog.cashdog.BlankFragment"
+        android:label="@string/label_blank"
+        tools:layout="@layout/fragment_blank" >
+        <action
+            android:id="@+id/action_blankFragment_to_blankFragment2"
+            app:destination="@id/blankFragment2" />
+    </fragment>
+    <fragment
+        android:id="@+id/blankFragment2"
+        android:name="com.example.cashdog.cashdog.BlankFragment2"
+        android:label="@string/label_blank_2"
+        tools:layout="@layout/fragment_blank_fragment2" />
+</navigation>
+```
+    
+#### 대상으로 이동
+대상으로 이동하는 것은 ```NavController``` 객체를 사용하여 실행되며 이 객체는 ```NavHost``` 내에서 앱 탐색을 관리한다. 각 NavHost에는 해당하는 자체 NavController가 있는데, 다음 메서드 중 하나를 사용하여 NavController를 검색한다.
+
+**Kotlin:**    
+    - Fragment.findNavController()
+    - View.findNavController()
+    - Activity.findNavController(viewId: Int)
+    
+> FragmentContainerView를 사용하여 NavHostFragment를 만들 때 & FragmentTransaction을 통해 NavHostFragment를 활동에 수동으로 추가할 경우, Navgation.findNavController(Activity, @IdRes int)를 통해 활동의 onCreate()에서 NavController를 검색하려고 하면 **실패**한다. 대신 NavHostFragment에서 직접 NavController를 검색해야 함!
+
+```
+val navHostFragment =
+        supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+val navController = navHostFragment.navController
+```
+
+⨁ Safe Args를 사용한 대상간의 이동을 위한 안전성 보장
+    
+[Safe Args를 사용하여 유형 안전성을 갖춘 데이터 전달](https://developer.android.com/guide/navigation/navigation-pass-data?hl=ko#Safe-args)
+    
+- build.gradle에 classpath 포함
+```
+    buildscript {
+    repositories {
+        google()
+    }
+    dependencies {
+        val nav_version = "2.4.1"
+        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version")
+    }
+}
+```
+    
+- build.gradle(module)에 플러그인 적용
+```
+plugins {
+    id("androidx.navigation.safeargs")
+}
+    
+// or
+    
+plugins {
+    id("androidx.navigation.safeargs.kotlin")
+}
+    
+```
+    
+- gradle.properties 파일에 ```android.useAndroidX=true```가 있어야 함.
+    
+```
+    override fun onClick(view: View) {
+    val action =
+        SpecifyAmountFragmentDirections
+            .actionSpecifyAmountFragmentToConfirmationFragment()
+    view.findNavController().navigate(action)
+}
+```
+    
+    
+    
+    
