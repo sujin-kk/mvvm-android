@@ -22,6 +22,199 @@
 
 [navigation](http://developer.android.com/guide/navigation?hl=ko)
 
+<img src="https://user-images.githubusercontent.com/85485290/161585686-7bd7f92c-03e7-4382-981d-20c2d13b31c1.png" width="400" >
+
+navigation 구성 요소는 세가지 주요 부분으로 구성된다는데,,
+
+- Navigation Graph: 모든 탐색 관련 정보가 하나의 중심 위치에 모여 있는 **XML 리소스**. 여기에는 *대상*이라고 부르는 앱 내의 모든 개별적 콘텐츠 영역과 사용자가 앱에서 갈 수 있는 모든 이용 가능한 경로가 포함된다.
+- `NavHost`: 탐색 그래프에서 대상을 표시하는 빈 컨테이너. 대상 구성요소에는 프래그먼트 대상을 표시하는 기본 `NavHost` 구현인 `[NavHostFragment](https://developer.android.com/reference/androidx/navigation/fragment/NavHostFragment?hl=ko)`가 포함된다.
+- `NavController`: `NavHost`에서 앱 탐색을 관리하는 객체. `NavController`는 사용자가 앱 내에서 이동할 때 `NavHost`에서 대상 콘텐츠의 전환을 오케스트레이션한다(?).
+
+
+앱을 탐색하는 동안 네비게이션 그래프에서 특정 경로를 따라 이동할지, 특정 대상으로 직접 이동할지 `NavController`에게 전달 → 그러면 `NavController`가 `NavHost`에 적절한 대상을 표시한다.
+
+
+> sunflower 프로젝트는 **SPA(Single-Page-Application)** 싱글 액티비티 구조 → 하나의 액티비티와 다수의 프래그먼트가 존재한다!
+
+여기서는 Jetpack Navigation에서 제공해주는 바텀 네비게이션과 툴바를 사용하지는 않았고, Main Activity 위에 **Toolbar + ViewPager2 + TabLayout** 구조를 가진 Fragment가 세팅되어 있고 프래그먼트가 전환되는 식이다!
+
++프래그먼트에서 아이템을 누르면 Detail 화면으로 가는 네비게이션을 가진다.
+
+- Jetpack Navigation은 싱글 액티비티 디자인, 프래그먼트를 활용할 때 강한 장점이 있다✨
+
+
+
+**[GardenActivity XML]**
+
+- 단 하나의 (메인)액티비티를 담당
+- XML에 navGraph와 defaultNavHost가 설정되어 있다!
+    - app:navGraph 속성은 NavHostFragment를 탐색 그래프와 연결합니다. 탐색 그래프는 사용자가 이동할 수 있는 이 NavHostFragment의 모든 대상을 지정합니다.
+    - app:defaultNavHost="true" 속성을 사용하면 NavHostFragment가 시스템 뒤로 버튼을 가로챕니다. 하나의 NavHost만 기본값으로 지정할 수 있습니다. 동일한 레이아웃에 여러 호스트가 있다면(예: 창이 2개인 레이아웃) 한 호스트만 기본 NavHost로 지정해야 합니다
+- [navigation-정리글](http://youngest-programming.tistory.com/274)
+- FragmentContainerView에 ViewPager2가 세팅된다!
+- navGraph에 nav_garden xml 리소스를 연결시켜준다
+
+```xml
+xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/nav_host"
+        android:name="androidx.navigation.fragment.NavHostFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:defaultNavHost="true"
+        app:navGraph="@navigation/nav_garden" />
+
+</layout>
+```
+
+**[nav_garden XML]**
+
+<img src="https://user-images.githubusercontent.com/85485290/161586070-cf07e9e1-c0d8-4931-94db-2320da6615c4.png" width="400">
+
+- 위와 같이 3개의 화면으로, 각 화면 이동간에 anim이 구현되어 있음
+- 화면 이동하며 넘겨지는 arguments 들도 설정되어 있음
+- [참고링크](http://youngest-programming.tistory.com/332)
+- [anim-참고링크](http://youngest-programming.tistory.com/483)
+
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    app:startDestination="@id/view_pager_fragment">
+
+    <fragment
+        android:id="@+id/view_pager_fragment"
+        android:name="com.google.samples.apps.sunflower.HomeViewPagerFragment"
+        tools:layout="@layout/fragment_view_pager">
+
+        <action
+                android:id="@+id/action_view_pager_fragment_to_plant_detail_fragment"
+                app:destination="@id/plant_detail_fragment"
+                app:enterAnim="@anim/slide_in_right"
+                app:exitAnim="@anim/slide_out_left"
+                app:popEnterAnim="@anim/slide_in_left"
+                app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/plant_detail_fragment"
+        android:name="com.google.samples.apps.sunflower.PlantDetailFragment"
+        android:label="@string/plant_details_title"
+        tools:layout="@layout/fragment_plant_detail">
+
+        <action
+            android:id="@+id/action_plant_detail_fragment_to_gallery_fragment"
+            app:destination="@id/gallery_fragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <argument
+            android:name="plantId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/gallery_fragment"
+        android:name="com.google.samples.apps.sunflower.GalleryFragment"
+        android:label="@string/plant_details_title"
+        tools:layout="@layout/fragment_gallery">
+        <argument
+            android:name="plantName"
+            app:argType="string" />
+    </fragment>
+
+</navigation>
+```
+
+
+
+- HomeViewPagerFragment(에서 Plant List 프래그먼트) → PlantDetailFragment(식물 상세 화면) 를 보면,,
+
+```xml
+<fragment
+        android:id="@+id/plant_detail_fragment"
+        android:name="com.google.samples.apps.sunflower.PlantDetailFragment"
+        android:label="@string/plant_details_title"
+        tools:layout="@layout/fragment_plant_detail">
+
+        <action
+            android:id="@+id/action_plant_detail_fragment_to_gallery_fragment"
+            app:destination="@id/gallery_fragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <argument
+            android:name="plantId"
+            app:argType="string" />
+    </fragment>
+```
+
+- **PlantDetailFragment**는 plantId라는 String 타입 매개변수를 전달 받는다.
+
+
+
+- 그리고 **HomeViewPager**는 `<action>`으로 PlantDetailFragment로 Direction이 설정되어 있는데,
+- 이렇게 설정하면 빌드 시 자동으로 NavController에서 네비게이션 하는 함수가 만들어진다!
+
+```xml
+ <fragment
+        android:id="@+id/view_pager_fragment"
+        android:name="com.google.samples.apps.sunflower.HomeViewPagerFragment"
+        tools:layout="@layout/fragment_view_pager">
+
+        <action
+                android:id="@+id/action_view_pager_fragment_to_plant_detail_fragment"
+                app:destination="@id/plant_detail_fragment"
+                app:enterAnim="@anim/slide_in_right"
+                app:exitAnim="@anim/slide_out_left"
+                app:popEnterAnim="@anim/slide_in_left"
+                app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+```
+
+
+
+- PlantListFragment  리싸이클러뷰의 **PlantAdapter**에 아이템 클릭 시 PlantDetailFragment로 이동하는 이벤트가 구현되어 있다.
+
+```kotlin
+// PlantAdapter
+private fun navigateToPlant(
+            plant: Plant,
+            view: View
+        ) {
+            val direction =
+                HomeViewPagerFragmentDirections.actionViewPagerFragmentToPlantDetailFragment(
+                    plant.plantId
+                )
+            view.findNavController().navigate(direction)
+        }
+```
+
+
+
+- **PlantDetailFragment**에서는 by navArgs로 값을 전달받는다!
+
+```kotlin
+@AndroidEntryPoint
+class PlantDetailFragment : Fragment() {
+
+    private val args: PlantDetailFragmentArgs by navArgs()
+
+    @Inject
+    lateinit var plantDetailViewModelFactory: PlantDetailViewModelFactory
+
+    private val plantDetailViewModel: PlantDetailViewModel by viewModels {
+        PlantDetailViewModel.provideFactory(plantDetailViewModelFactory, args.plantId)
+    }
+```
+
+---
 ### 2. View
 - MVVM에서 View에 해당하는 Activity, Fragment, Adapter
 - 이 프로젝트는 SPA(Single-Page-Application) 구조!
