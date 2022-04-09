@@ -352,6 +352,7 @@ data binding 을 사용했을 때, 당장 가시적으로 보이는 장점들을
 ### 6. Coroutine
 
 - 코루틴과 레트로핏을 함께 쓰기
+
 [참고블로그-Retrofit-With-Coroutine](https://zladnrms.tistory.com/16)
 
 - coroutine을 사용하지 않을 땐, 네트워크 비동기 처리를 위해 retrofit2를 사용하였고, response data의 stream 처리를 위해서는 RxJava2를 사용했다고 한다.
