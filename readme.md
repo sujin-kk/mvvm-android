@@ -351,6 +351,225 @@ data binding 을 사용했을 때, 당장 가시적으로 보이는 장점들을
 ---
 ### 6. Coroutine
 
+- 코루틴과 레트로핏을 함께 쓰기
+[참고블로그-Retrofit-With-Coroutine](https://zladnrms.tistory.com/16)
+
+- coroutine을 사용하지 않을 땐, 네트워크 비동기 처리를 위해 retrofit2를 사용하였고, response data의 stream 처리를 위해서는 RxJava2를 사용했다고 한다.
+- 비동기 처리가 필요한 부분, 특히 서버와의 API 통신 부분을 coroutine으로 교체해보자!
+
+🏠 가게 목록 API를 GET Method로 가져오는 상황
+
+1. API 호출을 위한 Retrofit 인터페이스를 구현
+
+```kotlin
+// RetrofitInterface.kt
+@GET("xxx/xxx")
+suspend fun getStoreList(
+	@Header("x-access-token") token: String,
+): StoreListResponse
+```
+
+- retrofit 2.6.0 버전 이전에는 API 요청에 대한 응답을 반환받을 때 Response<T>가 필수였는데, coroutine의 suspend modifier 업데이트 이후 retrofit2에서도 변경이 있는데,,,
+- `suspend` 식별자를 붙이면 Response가 필수가 아니게 된 것! _[ref](https://stackoverflow.com/questions/43021816/difference-between-thread-and-coroutine-in-kotlin)
+- 그래서 API 호출 후 데이터 클래스로 바로 반환받는 것이 가능하게 되었고, 이는 API 호출 결과 처리에 있어서 기존의 상용구코드, Boiler Plate들을 줄여준다는 것에 있어서 의미가 ⬆️
+- 요약하면, coroutine은 thread위에서 동작하는데, suspend 수식어가 붙은 함수가 실행되면 그 직후부터 그 함수가 끝나거나 값을 반환할때까지, thread를 block시키지 않고 suspend(지연)시키는 것. 즉,  그 함수가 호출되면 해당 함수로 Context Switching이 즉시 실행되는 것이 아니라, 우선 지연되어 특정한 시점에 호출되어 처리하는 것이다!
+
+<aside>
+💡 이러한 방법은 block에 비해 cost가 상대적으로 free하다고 하는데,,!
+
+</aside>
+
+1. API를 호출하여 처리하는 ViewModel의 로직
+
+```kotlin
+//StoreViewModel.kt
+class StoreViewModel(private val repository: UserRepository, private val api: RetrofitInterface) : DisposableViewModel() {
+
+    private val user by lazy {
+        viewModelScope.async(Dispatchers.IO) {
+            repository.getUserInfo()
+        }
+    }
+
+    // recyclerview list
+    val storeList = MutableLiveData<ArrayList<Store>>().apply { value = arrayListOf() }
+    // empty list
+    val emptyList : LiveData<Boolean> get() = Transformations.map(storeList) {
+        it.isEmpty()
+    }
+    // is True = ProgressView VISIBLE , is False = ProgressView GONE
+    private val _dataLoading = MutableLiveData<Boolean>()
+    val dataLoading: LiveData<Boolean> get() = _dataLoading
+
+    // ViewModel의 생성과 함께 API 호출
+    init {
+        getStoreList()
+    }
+    
+    // 가게 목록을 가져오는 함수
+    fun getStoreList() {
+        // Progress View VISIBLE
+        _dataLoading.value = true
+        // StoreList 초기화
+        storeList.value?.clear()
+
+        // 비동기 처리 Scope 선언
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                //user.key = token XXXXXXXXXXXXXXXX
+                api.getStoreList(user.await().key.tokenize()).apply {
+                    if (this.results.size > 0) {
+                        storeList.value?.addAll(this.results)
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        storeList.value = storeList.value
+                        // Progress View GONE
+                        _dataLoading.value = false
+                    }
+                }
+            } catch (e: Throwable) {
+                ...
+            }
+        }
+    }
+```
+
+- 변수 설명
+    - `DisposableViewModel` : ViewModel을 상속하며 LifeCycle에 맞추어 RxJava의 Observable 구독 해제를 담당하는 역할이 추가됨
+    - `repository: UserRepository` : 회원 정보를 담고 있는 Local DB
+    - `api: RetrofitInterface` : API 요청을 위한 Retrofit Interface
+    - `storeList` : Store data class를 List로 가지고 있는 객체를 가지고 있는 LiveData 클래스, RecyclerView의 List로써 쓰인다.
+    - `fun getStoreList()` : 서버로 부터 Store의 목록을 받아오는 비동기 네트워크 처리 함수.
+    - `dataLoading` : 비동기 처리 중 화면에 Loading Progress를 표시할 View의 VISIBLE 처리를 위한 LiveData객체.
+    - `viewModelScope` : ViewModel 내에서 **Coroutine을 처리하기 위한 Scope** 선언
+    - `repository.getUserInfo()` : Local DB에 저장된 유저의 데이터를 사용하기 위한 함수. 여기서는 회원의 Token 값을 사용하기 위해 호출함.
+    - `api.getStoreList()` : Remote DB와 연동하기 위한 함수. 서버에서 유저의 Store 목록을 가져온다
+    
+    <aside>
+    💡 메모리 누수 방지를 위해 LifeCycle Destroyed에 맞추어 구독을 해지하는 것을, ViewModel 상속으로 구현한 것이 **DisposableViewModel**
+    
+    </aside>
+    
+    ```kotlin
+    open class DisposableViewModel: ViewModel() {
+    
+        /**
+         * Observable의 Disposable 객체를 모아두는 클래스.
+         * ViewModel이 clear될 때, 한 번에 구독해지하는 역할을 담당함.
+         */
+        private val compositeDisposable = CompositeDisposable()
+    
+        fun addDisposable(disposable: Disposable) {
+            compositeDisposable.add(disposable)
+        }
+    
+        override fun onCleared() {
+            compositeDisposable.clear() // or dispose()
+            super.onCleared()
+        }
+    }
+    ```
+    
+
+또한 ViewModel 예시의 viewModelScope 안에서는 try/catch를 이용하여 예외처리를 하고있는데, viewModel 내에서 수많은 비동기 처리와 그에따른 예외 처리를 할때마다  try/catch를 사용한다면 이는 분명 **Boiler Plate**이다.
+
+- Boiler Plate Code : 재사용 가능한 프로그램, 템플릿 코드 환경 등을 의미
+
+[android에서 boiler plate code를 피하기](https://charlezz.medium.com/%EB%B3%B4%EC%9D%BC%EB%9F%AC%ED%94%8C%EB%A0%88%EC%9D%B4%ED%8A%B8-%EC%BD%94%EB%93%9C%EB%9E%80-boilerplate-code-83009a8d3297)
+
+그래서 Coroutine은 CoroutineScope 내부의 예외처리 Handler을 제공하고 있다!
+
+**[CoroutineExceptionHandler](https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/)**이라는 녀석✨
+
+- 위의 DisposableViewModel에 CoroutineExceptionHandler를 추가한 모습
+- CoroutineScope 내에서 발생한 Exception을 Catch 해주어 coroutineContext와 Throwable의 형태로 반환
+- Dispatchers.IO와 Dispatchers.Main 등 사용할 쓰레드에 위의 핸들러를 추가하여 따로 변수를 만들었다.
+
+```kotlin
+open class DisposableViewModel: ViewModel() {
+
+    /**
+     * CoroutineScope 내부 Exception 처리 Handler
+     */
+    protected val coroutineExceptionHanlder = CoroutineExceptionHandler { coroutineContext, throwable ->
+        throwable.printStackTrace()
+    }
+
+    /**
+     * Dispatchers 선언 (Normal Dispatchers + CoroutineExceptionHandler)
+     */
+    protected val ioDispatchers = Dispatchers.IO + coroutineExceptionHanlder
+    protected val uiDispatchers = Dispatchers.Main + coroutineExceptionHanlder
+
+    /**
+     * Clear Rx when called onCleared
+     */
+    private val compositeDisposable = CompositeDisposable()
+
+    fun addDisposable(disposable: Disposable) {
+        compositeDisposable.add(disposable)
+    }
+
+    override fun onCleared() {
+        compositeDisposable.clear()
+        super.onCleared()
+    }
+}
+```
+
+- DisposableViewModel을 상속받은 StoreViewModel
+
+```kotlin
+//StoreViewModel.kt
+class StoreViewModel(private val repository: UserRepository, private val api: NetworkInterface) : DisposableViewModel() {
+
+    private val user by lazy {
+        viewModelScope.async(ioDispatchers) {
+            repository.getUserInfo()
+        }
+    }
+
+    // recyclerview list
+    val storeList = MutableLiveData<ArrayList<Store>>().apply { value = arrayListOf() }
+    // empty list
+    val emptyList : LiveData<Boolean> get() = Transformations.map(storeList) {
+        it.isEmpty()
+    }
+    // is True = ProgressView VISIBLE , is False = ProgressView GONE
+    private val _dataLoading = MutableLiveData<Boolean>()
+    val dataLoading: LiveData<Boolean> get() = _dataLoading
+
+    // ViewModel의 생성과 함께 API 호출
+    init {
+        getStoreList()
+    }
+    
+    // 가게 목록을 가져오는 함수
+    fun getStoreList() {
+        // Progress View VISIBLE
+        _dataLoading.value = true
+        // StoreList 초기화
+        storeList.value?.clear()
+
+        // 비동기 처리 Scope 선언
+        viewModelScope.launch(ioDispatchers) {
+            api.getStoreList(user.await().key.tokenize()).apply {
+                if (this.results.size > 0) {
+                    storeList.value?.addAll(this.results)
+                }
+
+                withContext(uiDispatchers) {
+                    storeList.value = storeList.value
+                    // Progress View GONE
+                    _dataLoading.value = false
+                }
+            }
+        }
+    }
+}
+```
+    
 ---
 ### 7. Navigation
 
